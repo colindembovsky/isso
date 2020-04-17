@@ -1,7 +1,6 @@
 # -*- encoding: utf-8 -*-
 
 import mysql.connector
-from mysql.connector import Error
 import logging
 import operator
 import os.path
@@ -58,8 +57,11 @@ class MySQL:
             cursor = self.connection.cursor()
             cursor.execute(query, parameters)
             return cursor
-        except Error as e:
-            print("MySQL Execute error %d: %s" % (e.args[0], e.args[1]))
+        except mysql.connector.Error as err:
+            print(err)
+            print("Error Code:", err.errno)
+            print("SQLSTATE", err.sqlstate)
+            print("Message", err.msg)
  
     def __select(self, query, parameters):
         return self.__execute(query, parameters)
