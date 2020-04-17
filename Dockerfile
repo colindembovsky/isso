@@ -12,7 +12,7 @@ COPY --from=0 /src .
 RUN apt-get -qqy update && apt-get -qqy install python3-dev sqlite3
 RUN python3 -m venv /isso \
  && . /isso/bin/activate \
- && pip install gunicorn cffi \
+ && pip install gunicorn cffi mysql-connector-python \
  && python setup.py install
 
 # Third, create final repository
