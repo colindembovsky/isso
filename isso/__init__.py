@@ -91,6 +91,7 @@ class Isso(object):
         if self.conf.has_option("mysql", "host"):
             logger.info("Using mysql database connector")
             self.db = mysql.MySQL(conf)
+            logger.info("MySQL version: %s" % self.db.version)
         else:
             logger.info("Using sqlite database connector")
             self.db = db.SQLite3(conf.get('general', 'dbpath'), conf)

@@ -59,7 +59,7 @@ class MySQL:
             cursor.execute(query, parameters)
             return cursor
         except Error as e:
-            print("Execute error %d: %s" % (e.args[0], e.args[1]))
+            print("MySQL Execute error %d: %s" % (e.args[0], e.args[1]))
  
     def __select(self, query, parameters):
         return self.__execute(query, parameters)

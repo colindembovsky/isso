@@ -83,7 +83,7 @@ class Comments:
         )
 
         return dict(zip(Comments.fields, self.db.execute(
-            'SELECT *, MAX(c.id) FROM comments AS c INNER JOIN threads ON threads.uri = %',
+            'SELECT *, MAX(c.id) FROM comments AS c INNER JOIN threads ON threads.uri = %s',
             (uri, )).fetchone()))
 
     def activate(self, id):
@@ -108,7 +108,7 @@ class Comments:
             rv = self.db.execute([
                 'SELECT CASE WHEN EXISTS(',
                 '    select * from comments where email=%s and mode=1 and ',
-                '    created > DATE_SUB(CURDATE(), INTERVAL 6 MONTH))',
+                '    created > DATE_SUB(CURDATE(), INTERVAL 6 MONTH)',
                 ') THEN 1 ELSE 0 END;'], (email,)).fetchone()
             return rv[0] == 1
         else:
@@ -211,8 +211,8 @@ class Comments:
         Return comments for :param:`uri` with :param:`mode`.
         """
         sql = ['SELECT comments.* FROM comments INNER JOIN threads ON',
-               '    threads.uri=%s AND comments.tid=threads.id AND (%s | comments.mode) = ?',
-               '    AND comments.created>?']
+               '    threads.uri=%s AND comments.tid=threads.id AND (%s | comments.mode) = %s',
+               '    AND comments.created > %s']
 
         sql_args = [uri, mode, mode, after]
 
@@ -317,12 +317,16 @@ class Comments:
         Return comment count for main thread and all reply threads for one url.
         """
 
-        sql = ['SELECT comments.parent,count(*)',
-               'FROM comments INNER JOIN threads ON',
-               '   threads.uri=%s AND comments.tid=threads.id AND',
-               '   (%s | comments.mode = %s) AND',
-               '   comments.created > %s',
-               'GROUP BY comments.parent']
+        sql = """
+                SELECT
+                    c.parent, count(*)
+                FROM comments AS c
+                    INNER JOIN threads AS t
+                    ON t.uri=%s AND c.tid = t.id AND
+                    (%s | c.mode = %s) AND
+                  c.created > %s
+               GROUP BY c.parent
+               """
 
         return dict(self.db.execute(sql, [url, mode, mode, after]).fetchall())
 
@@ -331,11 +335,15 @@ class Comments:
         Return comment count for one ore more urls..
         """
 
-        threads = dict(self.db.execute([
-            'SELECT threads.uri, COUNT(comments.id) FROM comments',
-            'LEFT OUTER JOIN threads ON threads.id = tid AND comments.mode = 1',
-            'GROUP BY threads.uri'
-        ]).fetchall())
+        threads = dict(self.db.execute("""
+            SELECT 
+                t.uri, COUNT(c.id)
+            FROM comments AS c
+                LEFT OUTER JOIN threads AS t
+                ON t.id = c.tid AND c.mode = 1
+            GROUP BY t.uri
+            """
+        ).fetchall())
 
         return [threads.get(url, 0) for url in urls]
 
