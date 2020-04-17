@@ -88,8 +88,7 @@ class Isso(object):
 
         self.conf = conf
 
-        dbType = conf.get('general', 'dbType') 
-        if dbType == 'mysql':
+        if self.conf.has_option("mysql", "host"):
             logger.info("Using mysql database connector")
             self.db = mysql.MySQL(conf)
         else:
