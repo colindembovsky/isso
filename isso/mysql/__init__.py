@@ -1,6 +1,7 @@
 # -*- encoding: utf-8 -*-
 
 import mysql.connector
+from mysql.connector import Error
 import logging
 import operator
 import os.path
@@ -35,19 +36,22 @@ class MySQL:
         print("mysql_username: %s" % self.mysql_username)
         print("mysql_password: %s" % self.mysql_password)
 
-        try:
-            self.connection = mysql.connector.connect(host=self.mysql_host,
-                                                      database=self.mysql_db,
-                                                      user=self.mysql_username,
-                                                      password=self.mysql_password)
-            print("Successfully connected to mysql server %s" % self.mysql_host)
-        except Error as e:
-            print("Init error %d: %s" % (e.args[0], e.args[1]))
+        self.__initConnection()
+        print("Successfully connected to mysql server %s" % self.mysql_host)
 
         self.preferences = Preferences(self)
         self.threads = Threads(self)
         self.comments = Comments(self)
         self.guard = Guard(self)
+
+    def __initConnection(self):
+        try:
+            self.connection = mysql.connector.connect(host=self.mysql_host,
+                                                      database=self.mysql_db,
+                                                      user=self.mysql_username,
+                                                      password=self.mysql_password)
+        except Error as e:
+            print("Init error %d: %s" % (e.args[0], e.args[1]))
 
     def __execute(self, query, parameters=[]):
         if isinstance(query, (list, tuple)):
@@ -57,12 +61,14 @@ class MySQL:
             cursor = self.connection.cursor()
             cursor.execute(query, parameters)
             return cursor
-        except mysql.connector.Error as err:
-            print(err)
-            print("Error Code:", err.errno)
-            print("SQLSTATE", err.sqlstate)
-            print("Message", err.msg)
- 
+        except mysql.connector.errors.OperationalError:
+            # re-initialize the connection and try again
+            self.__initConnection()
+            return self.__execute(query, parameters)
+        except Error as e:
+            print("MySQL Execution error {}".format(e))
+            raise
+
     def __select(self, query, parameters):
         return self.__execute(query, parameters)
    
