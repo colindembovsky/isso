@@ -12,10 +12,10 @@ logger = logging.getLogger("isso")
 
 from isso.compat import buffer
 
-from isso.db.comments import Comments
-from isso.db.threads import Threads
-from isso.db.spam import Guard
-from isso.db.preferences import Preferences
+from isso.mysql.comments import Comments
+from isso.mysql.threads import Threads
+from isso.mysql.spam import Guard
+from isso.mysql.preferences import Preferences
 
 
 class MySQL:
@@ -31,21 +31,25 @@ class MySQL:
         self.mysql_db = conf.get('mysql', 'db')
         self.mysql_username = conf.get('mysql', 'username')
         self.mysql_password = conf.get('mysql', 'password')
-
-        self.preferences = Preferences(self)
-        self.threads = Threads(self)
-        self.comments = Comments(self)
-        self.guard = Guard(self)
+        print("mysql_host: %s" % self.mysql_host)
+        print("mysql_db: %s" % self.mysql_db)
+        print("mysql_username: %s" % self.mysql_username)
+        print("mysql_password: %s" % self.mysql_password)
 
         try:
             self.connection = mysql.connector.connect(host=self.mysql_host,
                                                       database=self.mysql_db,
                                                       user=self.mysql_username,
                                                       password=self.mysql_password)
-
+            print("Successfully connected to mysql server %s" % self.mysql_host)
         except Error as e:
             print("Init error %d: %s" % (e.args[0], e.args[1]))
- 
+
+        self.preferences = Preferences(self)
+        self.threads = Threads(self)
+        self.comments = Comments(self)
+        self.guard = Guard(self)
+
     def __execute(self, query, parameters=[]):
         if isinstance(query, (list, tuple)):
             query = ' '.join(query)
