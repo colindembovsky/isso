@@ -34,5 +34,5 @@ class Threads(object):
 
     def new(self, uri, title):
         self.db.commit(
-            "INSERT INTO threads (uri, title) VALUES (%s, %s)", (uri, title))
+            "INSERT IGNORE INTO threads (uri, title) VALUES (%s, %s)", (uri, title))
         return self[uri]
