@@ -101,6 +101,7 @@ class MySQL:
         cursor = self.__select(query, parameters)
         try:
             res = cursor.fetchone()
+            cursor.fetchall() # discard remaining rows
             return res
         finally:
             cursor.close()

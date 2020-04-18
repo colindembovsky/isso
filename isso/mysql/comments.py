@@ -91,9 +91,16 @@ class Comments:
             )
         )
 
-        return dict(zip(Comments.fields, self.db.fetchone(
-            'SELECT * FROM comments AS c INNER JOIN threads ON threads.uri = %s',
-            (uri, ))))
+        return dict(zip(Comments.fields, self.db.fetchone("""
+            SELECT * FROM comments AS c 
+                ORDER BY id DESC
+                INNER JOIN threads 
+                    ON threads.uri = %s
+                LIMIT 1
+            """,
+            (uri, )
+            )
+        ))
 
     def activate(self, id):
         """
