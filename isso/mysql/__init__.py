@@ -101,9 +101,12 @@ class MySQL:
         cursor = self.__select(query, parameters)
         try:
             res = cursor.fetchone()
-            cursor.fetchall() # discard remaining rows
             return res
         finally:
+            try:
+                cursor.fetchall() # discard remaining rows
+            except:
+                pass  # ignore this - there are no additional rows
             cursor.close()
    
     def dispose(self):
