@@ -24,7 +24,7 @@ class Threads(object):
         """)
 
     def __contains__(self, uri):
-        return self.db.fetchone("SELECT title FROM threads WHERE uri=%s", (uri, )) is not None
+        return self.db.fetchone("SELECT uri FROM threads WHERE uri=%s", (uri, )) is not None
 
     def __getitem__(self, uri):
         return Thread(*self.db.fetchone("SELECT * FROM threads WHERE uri=%s", (uri, )))
