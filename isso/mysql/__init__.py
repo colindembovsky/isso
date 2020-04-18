@@ -49,7 +49,8 @@ class MySQL:
             self.connection = mysql.connector.connect(host=self.mysql_host,
                                                       database=self.mysql_db,
                                                       user=self.mysql_username,
-                                                      password=self.mysql_password)
+                                                      password=self.mysql_password,
+                                                      use_pure=True) # necessary for voters pickling
         except Error as e:
             print("Init error %d: %s" % (e.args[0], e.args[1]))
 
@@ -72,16 +73,36 @@ class MySQL:
     def __select(self, query, parameters):
         return self.__execute(query, parameters)
    
+    def commit(self, query, parameters=[]):
+        cursor = self.__execute(query, parameters)
+        try:
+            self.connection.commit()
+            rc = cursor.rowcount
+            return rc
+        finally:
+            cursor.close()
+
     def execute(self, query, parameters=[]):
-        return self.__execute(query, parameters)
+        try:
+            cursor = self.__execute(query, parameters)
+        finally:
+            cursor.close()
  
     def fetchall(self, query, parameters=[]):
         cursor = self.__select(query, parameters)
-        return cursor.fetchall()
+        try:
+            res = cursor.fetchall()
+            return res
+        finally:
+            cursor.close()
    
     def fetchone(self, query, parameters=[]):
         cursor = self.__select(query, parameters)
-        return cursor.fetchone()
+        try:
+            res = cursor.fetchone()
+            return res
+        finally:
+            cursor.close()
    
     def dispose(self):
         if self.connection:
