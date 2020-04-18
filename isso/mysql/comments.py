@@ -1,6 +1,7 @@
 # -*- encoding: utf-8 -*-
 
 import time
+import pickle
 
 from isso.utils import Bloomfilter
 from isso.compat import buffer
@@ -41,8 +42,8 @@ class Comments:
                 author VARCHAR(250),
                 email VARCHAR(250),
                 website VARCHAR(250),
-                likes INT,
-                dislikes INT,
+                likes INT NOT NULL DEFAULT 0,
+                dislikes INT NOT NULL DEFAULT 0,
                 voters BLOB NOT NULL,
                 notification INT,
                 PRIMARY KEY (id),
@@ -65,32 +66,40 @@ class Comments:
             if ref.get("parent") is not None:
                 c["parent"] = ref["parent"]
 
-        self.db.execute([
-            'INSERT INTO comments (',
-            '    tid, parent,'
-            '    created, modified, mode, remote_addr,',
-            '    text, author, email, website, voters, notification)',
-            'SELECT',
-            '    threads.id, %s,',
-            '    %s, %s, %s, %s,',
-            '    %s, %s, %s, %s, %s, %s',
-            'FROM threads WHERE threads.uri = %s;'], (
-            c.get('parent'),
-            c.get('created') or time.time(), None, c["mode"], c['remote_addr'],
-            c['text'], c.get('author'), c.get('email'), c.get('website'), buffer(
-                Bloomfilter(iterable=[c['remote_addr']]).array), c.get('notification'),
-            uri)
+        self.db.commit("""
+            INSERT INTO comments (
+                tid, parent,
+                created, modified, mode, remote_addr,
+                text, author, email, website, 
+                voters,
+                notification
+            )
+            SELECT
+                threads.id, %s,
+                %s, %s, %s, %s,
+                %s, %s, %s, %s,
+                %s,
+                %s
+            FROM threads WHERE threads.uri = %s;
+            """, (
+                c.get('parent'),
+                c.get('created') or time.time(), None, c["mode"], c['remote_addr'],
+                c['text'], c.get('author'), c.get('email'), c.get('website'), 
+                pickle.dumps(Bloomfilter(iterable=[c['remote_addr']])),
+                c.get('notification'),
+                uri
+            )
         )
 
-        return dict(zip(Comments.fields, self.db.execute(
-            'SELECT *, MAX(c.id) FROM comments AS c INNER JOIN threads ON threads.uri = %s',
-            (uri, )).fetchone()))
+        return dict(zip(Comments.fields, self.db.fetchone(
+            'SELECT * FROM comments AS c INNER JOIN threads ON threads.uri = %s',
+            (uri, ))))
 
     def activate(self, id):
         """
         Activate comment id if pending.
         """
-        self.db.execute([
+        self.db.commit([
             'UPDATE comments SET',
             '    mode=1',
             'WHERE id=%s AND mode=2'], (id, ))
@@ -105,11 +114,11 @@ class Comments:
             # search for any activated comments within the last 6 months by email
             # this SQL should be one of the fastest ways of doing this check
             # https://stackoverflow.com/questions/18114458/fastest-way-to-determine-if-record-exists
-            rv = self.db.execute([
+            rv = self.db.fetchone([
                 'SELECT CASE WHEN EXISTS(',
                 '    select * from comments where email=%s and mode=1 and ',
                 '    created > DATE_SUB(CURDATE(), INTERVAL 6 MONTH)',
-                ') THEN 1 ELSE 0 END;'], (email,)).fetchone()
+                ') THEN 1 ELSE 0 END;'], (email,))
             return rv[0] == 1
         else:
             return False
@@ -118,7 +127,7 @@ class Comments:
         """
         Turn off email notifications for replies to this comment.
         """
-        self.db.execute([
+        self.db.commit([
             'UPDATE comments SET',
             '    notification=0',
             'WHERE email=%s AND (id=%s OR parent=%s);'], (email, id, id))
@@ -128,7 +137,7 @@ class Comments:
         Update comment :param:`id` with values from :param:`data` and return
         updated comment.
         """
-        self.db.execute([
+        self.db.commit([
             'UPDATE comments SET',
             ','.join(key + '=' + '%s' for key in data),
             'WHERE id=%s;'],
@@ -141,8 +150,8 @@ class Comments:
         Search for comment :param:`id` and return a mapping of :attr:`fields`
         and values.
         """
-        rv = self.db.execute(
-            'SELECT * FROM comments WHERE id=%s', (id, )).fetchone()
+        rv = self.db.fetchone(
+            'SELECT * FROM comments WHERE id=%s', (id, ))
         if rv:
             return dict(zip(Comments.fields, rv))
 
@@ -152,9 +161,9 @@ class Comments:
         """
         Return comment mode counts for admin
         """
-        comment_count = self.db.execute(
+        comment_count = self.db.fetchall(
             'SELECT mode, COUNT(comments.id) FROM comments '
-            'GROUP BY comments.mode').fetchall()
+            'GROUP BY comments.mode')
         return dict(comment_count)
 
     def fetchall(self, mode=5, after=0, parent='any', order_by='id',
@@ -201,7 +210,7 @@ class Comments:
             sql_args.append(page * limit)
             sql_args.append(limit)
 
-        rv = self.db.execute(sql, sql_args).fetchall()
+        rv = self.db.fetchall(sql, sql_args)
         for item in rv:
             yield dict(zip(fields_comments + fields_threads, item))
 
@@ -220,7 +229,7 @@ class Comments:
             if parent is None:
                 sql.append('AND comments.parent IS NULL')
             else:
-                sql.append('AND comments.parent=?')
+                sql.append('AND comments.parent=%s')
                 sql_args.append(parent)
 
         # custom sanitization
@@ -232,10 +241,10 @@ class Comments:
             sql.append(' DESC')
 
         if limit:
-            sql.append('LIMIT ?')
+            sql.append('LIMIT %s')
             sql_args.append(limit)
 
-        rv = self.db.execute(sql, sql_args).fetchall()
+        rv = self.db.fetchall(sql, sql_args)
         for item in rv:
             yield dict(zip(Comments.fields, item))
 
@@ -251,7 +260,7 @@ class Comments:
                '            comments',
                '        WHERE parent IS NOT NULL)')
 
-        while self.db.execute(sql).rowcount:
+        while self.db.commit(sql):
             continue
 
     def delete(self, id):
@@ -265,18 +274,18 @@ class Comments:
         In the second case this comment can be safely removed without any side
         effects."""
 
-        refs = self.db.execute(
-            'SELECT * FROM comments WHERE parent=%s', (id, )).fetchone()
+        refs = self.db.fetchone(
+            'SELECT * FROM comments WHERE parent=%s', (id, ))
 
         if refs is None:
-            self.db.execute('DELETE FROM comments WHERE id=%s', (id, ))
+            self.db.commit('DELETE FROM comments WHERE id=%s', (id, ))
             self._remove_stale()
             return None
 
-        self.db.execute('UPDATE comments SET text=%s WHERE id=%s', ('', id))
-        self.db.execute('UPDATE comments SET mode=%s WHERE id=%s', (4, id))
+        self.db.commit('UPDATE comments SET text=%s WHERE id=%s', ('', id))
+        self.db.commit('UPDATE comments SET mode=%s WHERE id=%s', (4, id))
         for field in ('author', 'website'):
-            self.db.execute('UPDATE comments SET %s=%s WHERE id=%s', (field, None, id))
+            self.db.commit('UPDATE comments SET %s=%s WHERE id=%s', (field, None, id))
 
         self._remove_stale()
         return self.get(id)
@@ -286,27 +295,27 @@ class Comments:
         the creater can't vote on his/her own comment and multiple votes from the
         same ip address are ignored as well)."""
 
-        rv = self.db.execute(
-            'SELECT likes, dislikes, voters FROM comments WHERE id=%s', (id, )) \
-            .fetchone()
+        rv = self.db.fetchone(
+            'SELECT likes, dislikes, voters FROM comments WHERE id=%s', (id, ))
 
         if rv is None:
             return None
 
-        likes, dislikes, voters = rv
+        likes, dislikes, votersPickle = rv
+        voters = pickle.loads(votersPickle)
         if likes + dislikes >= 142:
             return {'likes': likes, 'dislikes': dislikes}
 
-        bf = Bloomfilter(bytearray(voters), likes + dislikes)
+        bf = Bloomfilter(voters.array, likes + dislikes)
         if remote_addr in bf:
             return {'likes': likes, 'dislikes': dislikes}
 
         bf.add(remote_addr)
-        self.db.execute([
+        self.db.commit([
             'UPDATE comments SET',
             '    likes = likes + 1,' if upvote else 'dislikes = dislikes + 1,',
             '    voters = %s'
-            'WHERE id=%s;'], (buffer(bf.array), id))
+            'WHERE id=%s;'], (pickle.dumps(bf.array), id))
 
         if upvote:
             return {'likes': likes + 1, 'dislikes': dislikes}
@@ -328,14 +337,14 @@ class Comments:
                GROUP BY c.parent
                """
 
-        return dict(self.db.execute(sql, [url, mode, mode, after]).fetchall())
+        return dict(self.db.fetchall(sql, [url, mode, mode, after]))
 
     def count(self, *urls):
         """
         Return comment count for one ore more urls..
         """
 
-        threads = dict(self.db.execute("""
+        threads = dict(self.db.fetchall("""
             SELECT 
                 t.uri, COUNT(c.id)
             FROM comments AS c
@@ -343,7 +352,7 @@ class Comments:
                 ON t.id = c.tid AND c.mode = 1
             GROUP BY t.uri
             """
-        ).fetchall())
+        ))
 
         return [threads.get(url, 0) for url in urls]
 
@@ -351,7 +360,7 @@ class Comments:
         """
         Remove comments older than :param:`delta`.
         """
-        self.db.execute([
+        self.db.commit([
             'DELETE FROM comments WHERE mode = 2 AND DATEDIFF(%s, created) > %s;'
         ], (time.time(), delta))
         self._remove_stale()
