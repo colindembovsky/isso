@@ -93,9 +93,9 @@ class Comments:
 
         return dict(zip(Comments.fields, self.db.fetchone("""
             SELECT * FROM comments AS c 
-                ORDER BY id DESC
                 INNER JOIN threads 
                     ON threads.uri = %s
+            ORDER BY c.id DESC
                 LIMIT 1
             """,
             (uri, )
