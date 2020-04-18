@@ -159,6 +159,7 @@ class Comments:
         """
         rv = self.db.fetchone(
             'SELECT * FROM comments WHERE id=%s', (id, ))
+        print(rv)
         if rv:
             return dict(zip(Comments.fields, rv))
 
@@ -257,15 +258,19 @@ class Comments:
 
     def _remove_stale(self):
 
-        sql = ('DELETE FROM',
-               '    comments',
-               'WHERE',
-               '    mode=4 AND id NOT IN (',
-               '        SELECT',
-               '            parent',
-               '        FROM',
-               '            comments',
-               '        WHERE parent IS NOT NULL)')
+        sql = """
+            DELETE FROM comments
+            WHERE
+                mode=4 AND id NOT IN (
+                    SELECT parent FROM (
+                        SELECT
+                            parent
+                        FROM
+                            comments
+                        WHERE parent IS NOT NULL
+                    ) as p
+                )
+            """
 
         while self.db.commit(sql):
             continue
