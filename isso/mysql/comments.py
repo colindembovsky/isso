@@ -153,13 +153,15 @@ class Comments:
         return self.get(id)
 
     def get(self, id):
-        """
+        """`
         Search for comment :param:`id` and return a mapping of :attr:`fields`
         and values.
         """
         rv = self.db.fetchone(
             'SELECT * FROM comments WHERE id=%s', (id, ))
-        print(rv)
+        # for some reason, the row doesn't always come back first time
+        rv = self.db.fetchone(
+            'SELECT * FROM comments WHERE id=%s', (id, ))
         if rv:
             return dict(zip(Comments.fields, rv))
 
