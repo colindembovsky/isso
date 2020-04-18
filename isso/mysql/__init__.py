@@ -78,6 +78,7 @@ class MySQL:
         try:
             self.connection.commit()
             rc = cursor.rowcount
+            cursor.close()
             return rc
         finally:
             cursor.close()
