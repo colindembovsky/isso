@@ -29,9 +29,9 @@ class Guard:
     def _limit(self, uri, comment):
 
         # block more than :param:`ratelimit` comments per minute
-        rv = self.db.execute([
+        rv = self.db.fetchall([
             'SELECT id FROM comments WHERE remote_addr = %s AND DATEDIFF(%s, created) < 60;'
-        ], (comment["remote_addr"], time.time())).fetchall()
+        ], (comment["remote_addr"], time.time()))
 
         if len(rv) >= self.conf.getint("ratelimit"):
             return False, "{0}: ratelimit exceeded ({1})".format(
@@ -39,25 +39,25 @@ class Guard:
 
         # block more than three comments as direct response to the post
         if comment["parent"] is None:
-            rv = self.db.execute([
+            rv = self.db.fetchall([
                 'SELECT id FROM comments WHERE',
                 '    tid = (SELECT id FROM threads WHERE uri = %s)',
                 'AND remote_addr = %s',
                 'AND parent IS NULL;'
-            ], (uri, comment["remote_addr"])).fetchall()
+            ], (uri, comment["remote_addr"]))
 
             if len(rv) >= self.conf.getint("direct-reply"):
                 return False, "%i direct responses to %s" % (len(rv), uri)
 
         # block replies to self unless :param:`reply-to-self` is enabled
         elif self.conf.getboolean("reply-to-self") is False:
-            rv = self.db.execute([
+            rv = self.db.fetchall([
                 'SELECT id FROM comments WHERE'
                 '    remote_addr = %s',
                 'AND id = %s',
                 'AND DATEDIFF(%s, created) < %s'
             ], (comment["remote_addr"], comment["parent"],
-                time.time(), self.max_age)).fetchall()
+                time.time(), self.max_age))
 
             if len(rv) > 0:
                 return False, "edit time frame is still open"

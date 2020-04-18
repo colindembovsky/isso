@@ -26,8 +26,8 @@ class Preferences:
                 self.set(key, value)
 
     def get(self, key, default=None):
-        rv = self.db.execute(
-            'SELECT value FROM preferences WHERE `key` = %s', (key, )).fetchone()
+        rv = self.db.fetchone(
+            'SELECT value FROM preferences WHERE `key` = %s', (key, ))
 
         if rv is None:
             return default
@@ -35,5 +35,5 @@ class Preferences:
         return rv[0]
 
     def set(self, key, value):
-        self.db.execute(
+        self.db.commit(
             'INSERT INTO preferences (`key`, value) VALUES (%s, %s)', (key, value))

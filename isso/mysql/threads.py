@@ -24,16 +24,15 @@ class Threads(object):
         """)
 
     def __contains__(self, uri):
-        return self.db.execute("SELECT title FROM threads WHERE uri=%s", (uri, )) \
-                      .fetchone() is not None
+        return self.db.fetchone("SELECT title FROM threads WHERE uri=%s", (uri, )) is not None
 
     def __getitem__(self, uri):
-        return Thread(*self.db.execute("SELECT * FROM threads WHERE uri=%s", (uri, )).fetchone())
+        return Thread(*self.db.fetchone("SELECT * FROM threads WHERE uri=%s", (uri, )))
 
     def get(self, id):
-        return Thread(*self.db.execute("SELECT * FROM threads WHERE id=%s", (id, )).fetchone())
+        return Thread(*self.db.fetchone("SELECT * FROM threads WHERE id=%s", (id, )))
 
     def new(self, uri, title):
-        self.db.execute(
+        self.db.commit(
             "INSERT INTO threads (uri, title) VALUES (%s, %s)", (uri, title))
         return self[uri]
