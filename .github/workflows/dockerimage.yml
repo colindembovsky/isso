@@ -22,11 +22,8 @@ jobs:
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
     
-    - name: Log in to ACR registry
-      run: |
-        az acr login -n ${{ env.ACR_NAME }}
-    
     - name: Build and push the Docker image
       run: |
-        docker build . --file Dockerfile --tag ${{ env.ACR_NAME }}.azurecr.io/${{ env.ACR_REPO }}:${{ github.run_number }}
-        docker push ${{ env.ACR_NAME }}.azurecr.io/${{ env.ACR_REPO }}:${{ github.run_number }}
+        az acr login -n ${{ env.ACR_NAME }}
+        docker build . --file Dockerfile --tag ${{ env.ACR_NAME }}.azurecr.io/${{ env.ACR_REPO }}:1.0.${{ github.run_number }}
+        docker push ${{ env.ACR_NAME }}.azurecr.io/${{ env.ACR_REPO }}:1.0.${{ github.run_number }}
