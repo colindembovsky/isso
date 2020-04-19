@@ -1,0 +1,29 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches: [ master ]
+
+env:
+  ACR_NAME: cacregistry
+  ACR_RG: cacghost
+  ACR_REPO: issomysql
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    
+    - uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+    
+    - name: Build and push the Docker image
+      run: |
+        az acr login -n ${{ env.ACR_NAME }}
+        docker build . --file Dockerfile --tag ${{ env.ACR_NAME }}.azurecr.io/${{ env.ACR_REPO }}:1.0.${{ github.run_number }}
+        docker push ${{ env.ACR_NAME }}.azurecr.io/${{ env.ACR_REPO }}:1.0.${{ github.run_number }}
