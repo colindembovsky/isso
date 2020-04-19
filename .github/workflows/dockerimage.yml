@@ -28,5 +28,5 @@ jobs:
     
     - name: Build and push the Docker image
       run: |
-        docker build . --file Dockerfile --tag ${{ env.ACR_NAME }}/${{ env.ACR_REPO }}:${{ github.run_number }}
-        docker push ${{ env.ACR_NAME }}/${{ env.ACR_REPO }}:${{ github.run_number }}
+        docker build . --file Dockerfile --tag ${{ env.ACR_NAME }}.azurecr.io/${{ env.ACR_REPO }}:${{ github.run_number }}
+        docker push ${{ env.ACR_NAME }}.azurecr.io/${{ env.ACR_REPO }}:${{ github.run_number }}
