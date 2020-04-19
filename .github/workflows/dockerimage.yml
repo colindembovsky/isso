@@ -25,5 +25,12 @@ jobs:
     - name: Build and push the Docker image
       run: |
         az acr login -n ${{ env.ACR_NAME }}
-        docker build . --file Dockerfile --tag ${{ env.ACR_NAME }}.azurecr.io/${{ env.ACR_REPO }}:1.0.${{ github.run_number }}
-        docker push ${{ env.ACR_NAME }}.azurecr.io/${{ env.ACR_REPO }}:1.0.${{ github.run_number }}
+        
+        fqRepo="${{ env.ACR_NAME }}.azurecr.io/${{ env.ACR_REPO }}"
+        fqTag="$fqRepo:1.0.${{ github.run_number }}"
+        latestTag="$fqRepo:latest"
+
+        docker build . --file Dockerfile --tag $fqTag
+        docker push $fqTag
+        docker tag $fqTag $latestTag
+        docker push $latestTag
