@@ -27,10 +27,10 @@ class MySQL:
 
     def __init__(self, conf):
         self.conf = conf
-        self.mysql_host = conf.get('mysql', 'host')
-        self.mysql_db = conf.get('mysql', 'db')
-        self.mysql_username = conf.get('mysql', 'username')
-        self.mysql_password = conf.get('mysql', 'password')
+        self.mysql_host = os.getenv("MYSQL_HOST") or conf.get('mysql', 'host')
+        self.mysql_db = os.getenv("MYSQL_DB") or conf.get('mysql', 'db')
+        self.mysql_username = os.getenv("MYSQL_USERNAME") or conf.get('mysql', 'username')
+        self.mysql_password = os.getenv("MYSQL_PASSWORD") or conf.get('mysql', 'password')
         #print("mysql_host: %s" % self.mysql_host)
         #print("mysql_db: %s" % self.mysql_db)
         #print("mysql_username: %s" % self.mysql_username)

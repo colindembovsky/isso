@@ -12,6 +12,13 @@ Simply add the following section to the `isso.cfg` file to change the data layer
 
 ```
 # specify this section if you want to use mysql
+# you can also set these as environment variables:
+# - MYSQL_HOST
+# - MYSQL_DB
+# - MYSQL_USERNAME
+# - MYSQL_PASSWORD
+# env vars take preference
+
 [mysql]
 # mysql host
 host = mysql

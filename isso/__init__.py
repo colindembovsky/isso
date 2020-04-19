@@ -88,7 +88,7 @@ class Isso(object):
 
         self.conf = conf
 
-        if self.conf.has_option("mysql", "host"):
+        if self.conf.has_option("mysql", "host") or os.getenv("MYSQL_HOST") is not None:
             logger.info("Using mysql database connector")
             self.db = mysql.MySQL(conf)
             logger.info("MySQL version: %s" % self.db.version)
