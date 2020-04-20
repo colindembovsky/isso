@@ -59,6 +59,8 @@ class MySQL:
             query = ' '.join(query)
 
         try:
+            if (self.connection == None):
+                self.__initConnection()
             cursor = self.connection.cursor()
             cursor.execute(query, parameters)
             return cursor
