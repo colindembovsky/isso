@@ -89,7 +89,8 @@ class MySQL:
         try:
             cursor = self.__execute(query, parameters)
         finally:
-            cursor.close()
+            if cursor is not None:
+                cursor.close()
  
     def fetchall(self, query, parameters=[]):
         cursor = self.__select(query, parameters)
