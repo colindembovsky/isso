@@ -1,4 +1,3 @@
-ARG ISSOPORT=8080
 # First, compile JS stuff
 FROM node
 WORKDIR /src/
@@ -18,15 +17,14 @@ RUN python3 -m venv /isso \
 
 # Third, create final repository
 FROM python:3-slim-stretch
-ARG ISSOPORT
 WORKDIR /isso/
 COPY --from=1 /isso .
 
 # Configuration
 VOLUME /db /config
-EXPOSE ${ISSOPORT}
+EXPOSE 8088
 ENV ISSO_SETTINGS /config/isso.cfg
-CMD ["/isso/bin/gunicorn", "-b", "0.0.0.0:${ISSOPORT}", "-w", "4", "--preload", "isso.run"]
+CMD ["/isso/bin/gunicorn", "-b", "0.0.0.0:8088", "-w", "4", "--preload", "isso.run"]
 
 # Example of use:
 #
