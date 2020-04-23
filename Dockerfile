@@ -22,9 +22,9 @@ COPY --from=1 /isso .
 
 # Configuration
 VOLUME /db /config
-EXPOSE 8088
+EXPOSE 8080
 ENV ISSO_SETTINGS /config/isso.cfg
-CMD ["/isso/bin/gunicorn", "-b", "0.0.0.0:8088", "-w", "4", "--preload", "isso.run"]
+CMD ["/isso/bin/gunicorn", "-b", "0.0.0.0:8080", "-w", "4", "--preload", "isso.run"]
 
 # Example of use:
 #
