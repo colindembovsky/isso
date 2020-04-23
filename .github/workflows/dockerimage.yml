@@ -8,6 +8,7 @@ env:
   ACR_NAME: cacregistry
   ACR_RG: cacghost
   ACR_REPO: issomysql
+  ISSO_PORT: 8088
 
 jobs:
 
@@ -30,7 +31,7 @@ jobs:
         fqTag="$fqRepo:1.0.${{ github.run_number }}"
         latestTag="$fqRepo:latest"
 
-        docker build . --file Dockerfile --tag $fqTag
+        docker build . --file Dockerfile --build-arg PORT=${{ env.ISSO_PORT }} --tag $fqTag
         docker push $fqTag
         docker tag $fqTag $latestTag
         docker push $latestTag
