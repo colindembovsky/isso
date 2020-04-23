@@ -2,6 +2,7 @@
 
 import time
 import pickle
+import logging
 
 from isso.utils import Bloomfilter
 from isso.compat import buffer
@@ -261,7 +262,7 @@ class Comments:
             sql_args.append(limit)
 
         rv = self.db.fetchall(sql, sql_args)
-        logger.info("Found %s comments for uri %s", rv.length, uri)
+        logger.info("Found %s comments for uri %s", len(rv), uri)
 
         for item in rv:
             yield dict(zip(Comments.fields, item))

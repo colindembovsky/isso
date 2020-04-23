@@ -50,7 +50,7 @@ class MySQL:
                                                       password=self.mysql_password,
                                                       use_pure=True) # necessary for voters pickling
         except Error as e:
-            logger.error("Init error %d: %s", e.args[0] e.args[1])
+            logger.error("Init error %d: %s", e.args[0], e.args[1])
 
     def __execute(self, query, parameters=[]):
         if isinstance(query, (list, tuple)):
