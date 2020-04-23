@@ -1,3 +1,4 @@
+ARG PORT=8080
 # First, compile JS stuff
 FROM node
 WORKDIR /src/
@@ -23,9 +24,9 @@ COPY --from=1 /isso .
 
 # Configuration
 VOLUME /db /config
-EXPOSE ${PORT:-8080}
+EXPOSE ${PORT}
 ENV ISSO_SETTINGS /config/isso.cfg
-CMD ["/isso/bin/gunicorn", "-b", "0.0.0.0:${PORT:-8080}", "-w", "4", "--preload", "isso.run"]
+CMD ["/isso/bin/gunicorn", "-b", "0.0.0.0:${PORT}", "-w", "4", "--preload", "isso.run"]
 
 # Example of use:
 #
