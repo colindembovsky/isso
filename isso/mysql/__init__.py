@@ -31,13 +31,11 @@ class MySQL:
         self.mysql_db = os.getenv("MYSQL_DB") or conf.get('mysql', 'db')
         self.mysql_username = os.getenv("MYSQL_USERNAME") or conf.get('mysql', 'username')
         self.mysql_password = os.getenv("MYSQL_PASSWORD") or conf.get('mysql', 'password')
-        #print("mysql_host: %s" % self.mysql_host)
-        #print("mysql_db: %s" % self.mysql_db)
-        #print("mysql_username: %s" % self.mysql_username)
-        #print("mysql_password: %s" % self.mysql_password)
+        logger.info("mysql_host: %s", self.mysql_host)
+        logger.info("mysql_db: %s", self.mysql_db)
 
         self.__initConnection()
-        print("Successfully connected to mysql server %s" % self.mysql_host)
+        logger.info("Successfully connected to mysql server %s", self.mysql_host)
 
         self.preferences = Preferences(self)
         self.threads = Threads(self)
@@ -52,7 +50,7 @@ class MySQL:
                                                       password=self.mysql_password,
                                                       use_pure=True) # necessary for voters pickling
         except Error as e:
-            print("Init error %d: %s" % (e.args[0], e.args[1]))
+            logger.error("Init error %d: %s", e.args[0] e.args[1])
 
     def __execute(self, query, parameters=[]):
         if isinstance(query, (list, tuple)):
@@ -69,7 +67,7 @@ class MySQL:
             self.__initConnection()
             return self.__execute(query, parameters)
         except Error as e:
-            print("MySQL Execution error {}".format(e))
+            logger.error("MySQL Execution error {}".format(e))
             raise
 
     def __select(self, query, parameters):

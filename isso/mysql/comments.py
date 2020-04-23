@@ -6,6 +6,7 @@ import pickle
 from isso.utils import Bloomfilter
 from isso.compat import buffer
 
+logger = logging.getLogger("isso")
 
 class Comments:
     """Hopefully DB-independend SQL to store, modify and retrieve all
@@ -91,6 +92,8 @@ class Comments:
             )
         )
 
+        logger.info("Added comment for uri %s", uri)
+
         return dict(zip(Comments.fields, self.db.fetchone("""
             SELECT * FROM comments AS c 
                 INNER JOIN threads 
@@ -163,6 +166,7 @@ class Comments:
         rv = self.db.fetchone(
             'SELECT * FROM comments WHERE id=%s', (id, ))
         if rv:
+            logger.info("Found comment with id %s", id)
             return dict(zip(Comments.fields, rv))
 
         return None
@@ -174,6 +178,8 @@ class Comments:
         comment_count = self.db.fetchall(
             'SELECT mode, COUNT(comments.id) FROM comments '
             'GROUP BY comments.mode')
+
+        logger.info("Comment count is %s", comment_count)
         return dict(comment_count)
 
     def fetchall(self, mode=5, after=0, parent='any', order_by='id',
@@ -255,6 +261,8 @@ class Comments:
             sql_args.append(limit)
 
         rv = self.db.fetchall(sql, sql_args)
+        logger.info("Found %s comments for uri %s", rv.length, uri)
+
         for item in rv:
             yield dict(zip(Comments.fields, item))
 
